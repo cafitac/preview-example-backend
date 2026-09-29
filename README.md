@@ -23,6 +23,12 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-config app/logging.
 browser access. `DATABASE_URL` is required and uses `postgresql+psycopg://`.
 Migrations and seeds run explicitly, separately from server startup.
 
+Optionally set `NOTIFIER_URL` (for example, `http://localhost:8001`). After a
+note is committed, a background task sends one POST to `${NOTIFIER_URL}/api/notify`
+with `{"event":"note.created","payload":{"id":"<uuid>","text":"<note text>"}}`
+and a 2-second timeout. Delivery is best-effort, without retries: errors are
+logged once and do not change the 201 response. Empty or unset disables the call.
+
 - `GET /healthz`: `200 {"status":"ok"}` after a database query; otherwise 503.
 - `GET /api/notes`: JSON array, newest creation timestamp first (UUID breaks ties).
 - `POST /api/notes`: `{"text":"My note"}` creates a note and returns 201 with
@@ -44,6 +50,8 @@ Those commands also run on backend updates against the retained database volume.
 The seed inserts two fixed UUIDs with `ON CONFLICT DO NOTHING`, so reruns preserve
 existing notes and timestamps. The `api` subdomain exposes the service and
 `/healthz` gates readiness. This manifest expects frontend in the environment.
+The notifier dependency is optional; the hub injects its internal URL into
+`NOTIFIER_URL` when present and omits the variable when absent.
 
 The multi-stage image runs as UID 10001, logs to stdout, and uses a replaceable
 CMD so both resource initialization commands work without an entrypoint wrapper.
