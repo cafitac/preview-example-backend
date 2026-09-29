@@ -84,7 +84,9 @@ def get_session() -> Iterator[Session]:
 
 @app.get("/healthz")
 def health() -> dict[str, str]:
-    try:
+    logger.error("e2e-broken: health check intentionally failing")
+    raise HTTPException(status_code=500, detail="e2e-broken")
+    try:  # noqa: RET503 - unreachable on purpose for the e2e-broken fixture
         with get_engine().connect() as connection:
             connection.execute(text("SELECT 1"))
     except (SQLAlchemyError, KeyError):
