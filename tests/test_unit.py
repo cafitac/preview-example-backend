@@ -203,3 +203,75 @@ def test_create_note_succeeds_when_database_fails_after_commit() -> None:
     finally:
         app.dependency_overrides.pop(get_session, None)
         engine.dispose()
+
+
+@pytest.fixture(autouse=True)
+def disable_notifier_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("NOTIFIER_URL", raising=False)
+
+
+@pytest.mark.parametrize(
+    "outcome", ["success", "unset", "empty", "unreachable", "timeout", "500", "304"]
+)
+def test_optional_note_notification(
+    outcome: str, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    from email.message import Message
+    from unittest.mock import MagicMock
+    from urllib.error import HTTPError, URLError
+
+    session = Mock(spec=Session)
+    transport = MagicMock()
+    if outcome != "unset":
+        monkeypatch.setenv(
+            "NOTIFIER_URL", "" if outcome == "empty" else "http://notifier:8000/"
+        )
+    failures = {
+        "unreachable": URLError("connection refused"),
+        "timeout": TimeoutError("timed out"),
+        "500": HTTPError(
+            "http://notifier:8000/api/notify", 500, "failure", Message(), None
+        ),
+    }
+
+    def send(*args: object, **kwargs: object) -> MagicMock:
+        session.commit.assert_called_once_with()
+        if outcome in failures:
+            raise failures[outcome]
+        return MagicMock(
+            __enter__=Mock(return_value=Mock(status=304 if outcome == "304" else 204))
+        )
+
+    transport.side_effect = send
+    monkeypatch.setattr("app.main.urlopen", transport)
+    app.dependency_overrides[get_session] = lambda: session
+    try:
+        with TestClient(app) as client:
+            response = client.post("/api/notes", json={"text": "한글 note"})
+        assert response.status_code == 201
+        assert response.json()["text"] == "한글 note"
+        if outcome in {"unset", "empty"}:
+            transport.assert_not_called()
+        else:
+            transport.assert_called_once()
+            request = transport.call_args.args[0]
+            assert request.full_url == "http://notifier:8000/api/notify"
+            assert request.get_method() == "POST"
+            assert request.get_header("Content-type") == "application/json"
+            assert json.loads(request.data) == {
+                "event": "note.created",
+                "payload": {"id": response.json()["id"], "text": "한글 note"},
+            }
+            assert transport.call_args.kwargs == {"timeout": 2}
+        logs = [
+            record
+            for record in caplog.records
+            if record.name == "app.main" and record.levelname == "WARNING"
+        ]
+        if outcome in failures or outcome == "304":
+            assert len(logs) == 1
+            assert logs[0].getMessage().startswith("Note notification failed:")
+        else:
+            assert logs == []
+    finally:
+        app.dependency_overrides.pop(get_session)

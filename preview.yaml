@@ -12,6 +12,9 @@ expose:
 health:
   http: /healthz
   timeout: 90s
+requires:
+  - service: notifier
+    optional: true
 resources:
   db:
     type: postgres
@@ -22,3 +25,4 @@ resources:
 env:
   DATABASE_URL: ${resources.db.url}
   CORS_ORIGINS: ${services.frontend.public_url}
+  NOTIFIER_URL: ${services.notifier.internal_url}

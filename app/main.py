@@ -5,9 +5,11 @@ import sys
 from collections.abc import Iterator
 from datetime import UTC, datetime
 from typing import Annotated
+from urllib.request import Request as URLRequest
+from urllib.request import urlopen
 from uuid import UUID, uuid4
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -106,9 +108,28 @@ def list_notes(session: Annotated[Session, Depends(get_session)]) -> list[Note]:
         raise HTTPException(status_code=503, detail="Database unavailable") from None
 
 
+def notify_note_created(notifier_url: str, note_id: str, note_text: str) -> None:
+    try:
+        request = URLRequest(
+            f"{notifier_url.rstrip('/')}/api/notify",
+            data=json.dumps(
+                {"event": "note.created", "payload": {"id": note_id, "text": note_text}}
+            ).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(request, timeout=2) as result:
+            if not 200 <= result.status < 300:
+                raise ValueError(f"Notifier returned HTTP {result.status}")
+    except Exception as exc:
+        logger.warning("Note notification failed: %s", exc)
+
+
 @app.post("/api/notes", response_model=NoteResponse, status_code=201)
 def create_note(
-    payload: NoteCreate, session: Annotated[Session, Depends(get_session)]
+    payload: NoteCreate,
+    session: Annotated[Session, Depends(get_session)],
+    background_tasks: BackgroundTasks,
 ) -> NoteResponse:
     note = Note(id=uuid4(), text=payload.text, created_at=datetime.now(UTC))
     response = NoteResponse.model_validate(note)
@@ -119,4 +140,8 @@ def create_note(
         logger.warning("Database note creation failed")
         raise HTTPException(status_code=503, detail="Database unavailable") from None
     logger.info("Created note %s", response.id)
+    if notifier_url := os.getenv("NOTIFIER_URL"):
+        background_tasks.add_task(
+            notify_note_created, notifier_url, str(response.id), response.text
+        )
     return response
