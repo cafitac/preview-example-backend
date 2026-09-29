@@ -1,0 +1,24 @@
+apiVersion: preview-hub/v1
+service: backend
+build:
+  context: .
+  dockerfile: Dockerfile
+  args: {}
+run:
+  port: 8000
+  memory: 512Mi
+expose:
+  subdomain: api
+health:
+  http: /healthz
+  timeout: 90s
+resources:
+  db:
+    type: postgres
+    version: "16"
+    init:
+      - ["alembic", "upgrade", "head"]
+      - ["python", "-m", "app.seed"]
+env:
+  DATABASE_URL: ${resources.db.url}
+  CORS_ORIGINS: ${services.frontend.public_url}
