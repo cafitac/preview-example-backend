@@ -11,7 +11,7 @@ from app.models import Note
 SAMPLE_NOTES = [
     {
         "id": UUID("00000000-0000-4000-8000-000000000001"),
-        "text": "Welcome to preview-hub (e2e-alt s2)!",
+        "text": "Welcome to preview-hub (e2e-alt s2b)!",
     },
     {"id": UUID("00000000-0000-4000-8000-000000000002"), "text": "Try adding a note."},
 ]
