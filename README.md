@@ -83,3 +83,5 @@ pushes to main. Dependency declarations are in `pyproject.toml`; committed `uv.l
 versions installed by Docker. CI uses `uv sync --locked` to reject lock drift.
 
 <!-- public preview E2E -->
+
+<!-- public preview E2E -->
