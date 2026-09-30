@@ -81,3 +81,5 @@ test database. When `TEST_DATABASE_URL` is unset, database tests explicitly skip
 unit tests still run. CI supplies PostgreSQL 16 and runs all checks on PRs and
 pushes to main. Dependency declarations are in `pyproject.toml`; committed `uv.lock` pins the
 versions installed by Docker. CI uses `uv sync --locked` to reject lock drift.
+
+<!-- public preview E2E -->
