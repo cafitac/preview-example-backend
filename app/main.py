@@ -131,6 +131,8 @@ def create_note(
     session: Annotated[Session, Depends(get_session)],
     background_tasks: BackgroundTasks,
 ) -> NoteResponse:
+    # QA fixture branch (never merged): note creation always fails.
+    raise HTTPException(status_code=500, detail="Deliberately broken for QA")
     note = Note(id=uuid4(), text=payload.text, created_at=datetime.now(UTC))
     response = NoteResponse.model_validate(note)
     try:
