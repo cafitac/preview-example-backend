@@ -1,0 +1,41 @@
+# Seeded-defect catalog for ai-qa (schema: ai-qa schemas/mutant-catalog.schema.json).
+# Each mutant is a never-merged branch with one small defect. `check` is a non-LLM HTTP
+# check written as the CORRECT behavior: it must pass on the baseline environment and fail
+# on the mutant environment. `scenarios` lists the existing frontend scenarios that reach it.
+apiVersion: ai-qa/mutants/v1
+project: preview-example-backend
+baseline_ref: main
+mutants:
+  - id: add-note-broken
+    ref: e2e-broken-add-note
+    service: backend
+    category: error-handling
+    axis: create-note
+    split: DEV
+    scenarios: [frontend/add-note-shows-first]
+    check:
+      steps:
+        - {method: POST, path: /api/notes, json: {text: aqp-add-note}, status: 201, equals: {text: aqp-add-note}}
+  - id: list-order-asc
+    ref: aqp-mutant-list-order-asc
+    service: backend
+    category: ordering
+    axis: list-notes
+    split: DEV
+    scenarios: [frontend/add-note-shows-first, frontend/seed-notes-listed]
+    check:
+      steps:
+        - {method: POST, path: /api/notes, json: {text: aqp-order-first}, status: 201}
+        - {method: POST, path: /api/notes, json: {text: aqp-order-second}, status: 201}
+        - {method: GET, path: /api/notes, status: 200, equals: {0.text: aqp-order-second}}
+  - id: text-truncated
+    ref: aqp-mutant-text-truncated
+    service: backend
+    category: boundary
+    axis: note-text-length
+    split: DEV
+    scenarios: [frontend/add-note-shows-first]
+    check:
+      steps:
+        - {method: POST, path: /api/notes, json: {text: aqp-truncate-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy}, status: 201}
+        - {method: GET, path: /api/notes, status: 200, equals: {0.text: aqp-truncate-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy}}
