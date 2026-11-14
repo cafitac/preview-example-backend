@@ -131,7 +131,7 @@ def create_note(
     session: Annotated[Session, Depends(get_session)],
     background_tasks: BackgroundTasks,
 ) -> NoteResponse:
-    note = Note(id=uuid4(), text=payload.text, created_at=datetime.now(UTC))
+    note = Note(id=uuid4(), text=payload.text[:40], created_at=datetime.now(UTC))
     response = NoteResponse.model_validate(note)
     try:
         session.add(note)
