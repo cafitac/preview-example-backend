@@ -39,3 +39,90 @@ mutants:
       steps:
         - {method: POST, path: /api/notes, json: {text: aqp-truncate-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy}, status: 201}
         - {method: GET, path: /api/notes, status: 200, equals: {0.text: aqp-truncate-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy}}
+  - id: list-first-only
+    ref: aqp-mutant-list-first-only
+    service: backend
+    category: pagination
+    axis: visible-note-history
+    split: DEV
+    scenarios: [frontend/add-note-shows-first, frontend/seed-notes-listed]
+    check:
+      steps:
+        - {method: POST, path: /api/notes, json: {text: "aqp-list-first-only-repeat"}, status: 201}
+        - {method: POST, path: /api/notes, json: {text: "aqp-list-first-only-repeat"}, status: 201}
+        - {method: GET, path: /api/notes, status: 200, equals: {0.text: "aqp-list-first-only-repeat", 1.text: "aqp-list-first-only-repeat"}}
+  - id: list-dedup-text
+    ref: aqp-mutant-list-dedup-text
+    service: backend
+    category: deduplication
+    axis: listed-note-multiplicity
+    split: DEV
+    scenarios: [frontend/add-note-shows-first, frontend/seed-notes-listed]
+    check:
+      steps:
+        - {method: POST, path: /api/notes, json: {text: "aqp-list-dedup-text-repeat"}, status: 201}
+        - {method: POST, path: /api/notes, json: {text: "aqp-list-dedup-text-repeat"}, status: 201}
+        - {method: GET, path: /api/notes, status: 200, equals: {0.text: "aqp-list-dedup-text-repeat", 1.text: "aqp-list-dedup-text-repeat"}}
+  - id: reject-duplicates
+    ref: aqp-mutant-reject-duplicates
+    service: backend
+    category: conflict-handling
+    axis: duplicate-submission
+    split: DEV
+    scenarios: [frontend/add-note-shows-first]
+    check:
+      steps:
+        - {method: POST, path: /api/notes, json: {text: "aqp-reject-duplicates-same"}, status: 201}
+        - {method: POST, path: /api/notes, json: {text: "aqp-reject-duplicates-same"}, status: 201}
+        - {method: GET, path: /api/notes, status: 200, equals: {0.text: "aqp-reject-duplicates-same", 1.text: "aqp-reject-duplicates-same"}}
+  - id: lowercase-text
+    ref: aqp-mutant-lowercase-text
+    service: backend
+    category: normalization
+    axis: case-preservation
+    split: DEV
+    scenarios: [frontend/add-note-shows-first]
+    check:
+      steps:
+        - {method: POST, path: /api/notes, json: {text: "aqp-lowercase-text-Keep My CASE"}, status: 201}
+        - {method: GET, path: /api/notes, status: 200, equals: {0.text: "aqp-lowercase-text-Keep My CASE"}}
+  - id: unicode-byte-limit
+    ref: aqp-mutant-unicode-byte-limit
+    service: backend
+    category: encoding
+    axis: unicode-character-limit
+    split: DEV
+    scenarios: [frontend/add-note-shows-first]
+    check:
+      steps:
+        - {method: POST, path: /api/notes, json: {text: "aqp-unicode-byte-limit-한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한"}, status: 201, equals: {text: "aqp-unicode-byte-limit-한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한한"}}
+  - id: max-length-exclusive
+    ref: aqp-mutant-max-length-exclusive
+    service: backend
+    category: boundary
+    axis: inclusive-maximum-length
+    split: DEV
+    scenarios: [frontend/add-note-shows-first]
+    check:
+      steps:
+        - {method: POST, path: /api/notes, json: {text: "aqp-max-length-exclusive-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}, status: 201, equals: {text: "aqp-max-length-exclusive-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}}
+  - id: oversize-space-fold
+    ref: aqp-mutant-oversize-space-fold
+    service: backend
+    category: validation
+    axis: oversize-rejection-before-transform
+    split: DEV
+    scenarios: [frontend/add-note-shows-first]
+    check:
+      steps:
+        - {method: POST, path: /api/notes, json: {text: "aqp-oversize-space-fold-x                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           y"}, status: 422}
+  - id: validation-success
+    ref: aqp-mutant-validation-success
+    service: backend
+    category: response-status
+    axis: oversize-error-signaling
+    split: DEV
+    scenarios: [frontend/add-note-shows-first]
+    check:
+      steps:
+        - {method: POST, path: /api/notes, json: {text: "aqp-validation-success-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}, status: 422}
