@@ -55,7 +55,7 @@ async def request_validation_error_handler(
 
 
 class NoteCreate(BaseModel):
-    text: str = Field(min_length=1, max_length=500)
+    text: str = Field(min_length=1, max_length=499)
 
     @field_validator("text", mode="before")
     @classmethod
