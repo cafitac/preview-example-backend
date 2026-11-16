@@ -49,7 +49,6 @@ async def request_validation_error_handler(
     # Escape surrogates in any remaining error metadata as well.
     return Response(
         content=json.dumps({"detail": jsonable_encoder(errors)}, ensure_ascii=True),
-        status_code=422,
         media_type="application/json",
     )
 
