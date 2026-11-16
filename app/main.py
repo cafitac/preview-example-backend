@@ -68,6 +68,8 @@ class NoteCreate(BaseModel):
             raise HTTPException(
                 status_code=422, detail="Text contains invalid characters"
             )
+        if isinstance(value, str) and len(value.encode("utf-8")) > 500:
+            raise HTTPException(status_code=422, detail="Text exceeds 500 bytes")
         return value
 
 
