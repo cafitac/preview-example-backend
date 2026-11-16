@@ -101,7 +101,7 @@ def list_notes(session: Annotated[Session, Depends(get_session)]) -> list[Note]:
         return list(
             session.scalars(
                 select(Note).order_by(Note.created_at.desc(), Note.id.desc())
-            )
+            ).unique(lambda note: note.text)
         )
     except SQLAlchemyError:
         logger.warning("Database notes read failed")
