@@ -100,7 +100,7 @@ def list_notes(session: Annotated[Session, Depends(get_session)]) -> list[Note]:
     try:
         return list(
             session.scalars(
-                select(Note).order_by(Note.created_at.desc(), Note.id.desc())
+                select(Note).order_by(Note.created_at.desc(), Note.id.desc()).limit(1)
             )
         )
     except SQLAlchemyError:
