@@ -68,7 +68,7 @@ class NoteCreate(BaseModel):
             raise HTTPException(
                 status_code=422, detail="Text contains invalid characters"
             )
-        return value
+        return " ".join(value.split()) if isinstance(value, str) else value
 
 
 class NoteResponse(BaseModel):
