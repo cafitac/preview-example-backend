@@ -131,6 +131,8 @@ def create_note(
     session: Annotated[Session, Depends(get_session)],
     background_tasks: BackgroundTasks,
 ) -> NoteResponse:
+    if session.scalar(select(Note.id).where(Note.text == payload.text)) is not None:
+        raise HTTPException(status_code=409, detail="Note already exists")
     note = Note(id=uuid4(), text=payload.text, created_at=datetime.now(UTC))
     response = NoteResponse.model_validate(note)
     try:
